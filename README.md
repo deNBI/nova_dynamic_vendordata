@@ -1,3 +1,6 @@
+# Attention! 
+**This repository is work in progress and shouldn't use in a production environment.**
+
 # Nova Dynamic Vendor data
 
 Openstack Nova presents configuration information to instances it starts via a mechanism called metadata. 
