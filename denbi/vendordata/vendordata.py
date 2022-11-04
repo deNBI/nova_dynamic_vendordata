@@ -11,8 +11,6 @@ def vendordata():
     data = request.get_json()
 
 
-    users = identity.get("v3/users")
-
     if "project-id" in data:
         id = data["project-id"]
         # check for blacklisted project
@@ -21,15 +19,25 @@ def vendordata():
 
 def __userlist_by_project(project_id):
     """
-    Creates an userlist for given project_id. Each user comes with information about
+    Creates an user list for given project_id. Each user comes with information about
+    id, name, elixir_name, perun_id and ssh-keys
 
     :param project_id: openstack project id
     :return: set of user information
     """
 
+    # For some reason I didn't understand the endpoint url differs
+    # depending on the used authentication method (environment via
+    # openrc or clouds.yml).
+    # The following conditional checks this and set a prefix if necessary.
+
+    identity_prefix = ""
+    if not identity.get_endpoint().endswith("v3/"):
+        identity_prefix = "s3/"
+
     # get a list of all users, luckily also non-standard metadata ist returned when using REST-API
     _userlist = dict()
-    for _user in identity.get("v3/users").json()["users"]:
+    for _user in identity.get(f"{identity_prefix}users").json()["users"]:
         # id and name are always present
         _tmp = {"id" : _user["id"],
                 "name" :  _user["name"]
@@ -44,7 +52,7 @@ def __userlist_by_project(project_id):
 
     # get a list of all role assignments belonging to given project id and extract all user id's
     _userset = set()
-    for _role_assignment in identity.get(f"v3/role_assignments?scope.project.id={project_id}").json()["role_assignments"]:
+    for _role_assignment in identity.get(f"{identity_prefix}role_assignments?scope.project.id={project_id}").json()["role_assignments"]:
         _userset.add(_role_assignment["user"]["id"])
 
     result = list()

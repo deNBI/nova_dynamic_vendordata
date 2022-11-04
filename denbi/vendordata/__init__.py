@@ -12,4 +12,4 @@ import os_client_config
 
 
 identity = os_client_config.make_rest_client("identity")
-compute = os_client_config.make_sdk()
+sdk = os_client_config.make_sdk()
