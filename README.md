@@ -18,15 +18,47 @@ own style. There are three different kind of metadata which can be made availabl
 
 _Vendor data can be static or dynamic or a mixture of both._
 
+``
+curl http://169.254.269.254/latest
+``
 
-## Dynamic Vendor data
+## Configure Dynamic Vendor data
 
-tbw.
+Dynamic Vendor data can be enabled and configured in the Nova API configuration. It is possible to configure more
+than one endpoint. Different endpoints are distinguished by a unique prefix. The configuration example below configure
+two endpoints which delivers data when dynamic vendor is requested. 
+```
+tbw. Example nova configuration which two dynamic vendor data service defined.
+```
+Information like the project id the current instance
+is started in is provided to each dynamic enpoint.
+
+```
+tbw. Example information (in JSON) which is provided inside the POST request to a configured dynamic vendor data service.
+```
+
 
 ## Usage
 
-tbw.
+The nova_dynamic_vendordata service needs access to the Openstack API, therefor valid credentials must be past to 
+the service (using environment or clouds.yaml).
 
-## Docker container
+## Docker/Podman container
 
-tbw.
+A simple container based on latest alpine/python3 can be build using the Dockerfile.
+
+```
+docker build -t denbi/nova_dynamic_vendordata .
+```
+
+
+
+## Requirements and known issues.
+nova_dynamic_vendordata is tested on Ubuntu 20.04 and newer (Python 3.8 or newer). Older python version might work, but
+Ubuntu 18.04 with default python 3 version (3.6) is known not to be working.
+
+As defined in the requirements.txt the project is based on:
+
+- Flask
+- os_client_config
+- gunicorn
