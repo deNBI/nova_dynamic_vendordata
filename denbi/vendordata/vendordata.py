@@ -1,8 +1,11 @@
-from flask import Flask, request
+import logging
 
+from flask import Flask, request
 from denbi.vendordata import identity, sdk
 
 app = Flask(__name__)
+
+LOG = logging.getLogger()
 
 
 @app.post("/")
@@ -14,6 +17,7 @@ def vendordata():
         # check for blacklisted project
         return __userlist_by_project(project_id=id)
 
+    return None
 
 def __userlist_by_project(project_id):
     """

@@ -9,4 +9,4 @@ RUN apk add --no-cache build-base linux-headers && pip3 install --no-cache-dir -
 
 COPY . /usr/src/app
 
-EXPOSE 8080
+EXPOSE 8000
