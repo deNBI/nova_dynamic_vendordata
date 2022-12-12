@@ -9,4 +9,6 @@ RUN apk add --no-cache build-base linux-headers && pip3 install --no-cache-dir -
 
 COPY . /usr/src/app
 
-EXPOSE 8000
+EXPOSE 9000
+
+CMD gunicorn --workers 3 --bind 127.0.0.1:9000 wsgi:app

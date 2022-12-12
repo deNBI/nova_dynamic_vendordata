@@ -45,13 +45,23 @@ the service (using environment or clouds.yaml).
 
 ## Docker/Podman container
 
-A simple container based on latest alpine/python3 can be build using the Dockerfile.
+A simple container based on latest alpine/python3 can be build using the Dockerfile ...
 
 ```
 docker build -t denbi/nova_dynamic_vendordata .
 ```
 
+and be can run as follows ...
 
+```
+docker run --rm --env-file env.file --network host nova_dynamic_vendordata
+```
+using host network or ...
+
+```
+docker run --rm --env-file env.file -p 9000:9000 nova_dynamic_vendordata
+```
+using a separate network layer.
 
 ## Requirements and known issues.
 nova_dynamic_vendordata is tested on Ubuntu 20.04 and newer (Python 3.8 or newer). Older python version might work, but
