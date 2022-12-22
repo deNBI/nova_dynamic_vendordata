@@ -18,9 +18,26 @@ own style. There are three different kind of metadata which can be made availabl
 
 _Vendor data can be static or dynamic or a mixture of both._
 
-``
-curl http://169.254.269.254/latest
-``
+Query the vendor_data2.json returns all available vendor data static and dynamic in a single json file.
+
+```
+> curl http://169.254.169.254/openstack/latest/vendor_data2.json | jq 
+>{
+  "denbi": [
+    {
+      "elixir_name": "XXXX",
+      "id": "...",
+      "name": "...",
+      "perun_id": "...",
+      "public_keys": [
+        "ecdsa-sha2-nistp256 AAAA...",
+      ]
+    },
+    ...
+  ],
+  "nfdi": ...
+ }
+```
 
 ## Configure Dynamic Vendor data
 
@@ -28,15 +45,11 @@ Dynamic Vendor data can be enabled and configured in the Nova API configuration.
 than one endpoint. Different endpoints are distinguished by a unique prefix. The configuration example below configure
 two endpoints which delivers data when dynamic vendor is requested. 
 ```
-tbw. Example nova configuration which two dynamic vendor data service defined.
+[api]
+vendordata_providers=DynamicJSON
+vendordata_dynamic_targets=denbi@http://localhost:9898,nfdi@http://localhost
 ```
-Information like the project id the current instance
-is started in is provided to each dynamic enpoint.
-
-```
-tbw. Example information (in JSON) which is provided inside the POST request to a configured dynamic vendor data service.
-```
-
+Information like the project id the current instance is started in is provided to each dynamic endpoint.
 
 ## Usage
 
@@ -59,7 +72,7 @@ docker run --rm --env-file env.file --network host nova_dynamic_vendordata
 using host network or ...
 
 ```
-docker run --rm --env-file env.file -p 9000:9000 nova_dynamic_vendordata
+docker run --rm --env-file env.file -p 9898:9898 nova_dynamic_vendordata
 ```
 using a separate network layer.
 

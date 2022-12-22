@@ -55,14 +55,14 @@ def __userlist_by_project(project_id):
     _userset = set()
     for _role_assignment in identity.get(f"{identity_prefix}role_assignments?scope.project.id={project_id}").\
                                      json()["role_assignments"]:
-        _userset.add(_role_assignment["user"]["id"])
+        if "user" in _role_assignment: # we are only interested in users not groups or roles
+            _userset.add(_role_assignment["user"]["id"])
 
     result = list()
     for _user_id in _userset:
         _tmp = _userlist[_user_id]
         # get list of key pairs for _user_id
         _kp_list = list()
-        sdk.list_users
         for _kp in sdk.list_keypairs({"user_id": _user_id}):
             if _kp.type == "ssh":
                 _kp_list.append(_kp.public_key)
