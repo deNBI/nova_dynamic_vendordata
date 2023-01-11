@@ -87,7 +87,7 @@ In general, it is a good idea to use _allowlist_ to give only specific domains/p
 to service. 
 
 **Attention! There is no restriction when `allowlist` or `blocklist` for domains and project
-is not set.** 
+are not set.** 
 
 ### Caching
 
