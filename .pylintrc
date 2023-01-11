@@ -152,6 +152,8 @@ disable=raw-checker-failed,
         useless-suppression,
         deprecated-pragma,
         use-symbolic-message-instead,
+        logging-fstring-interpolation,
+        wrong-import-order,
         missing-function-docstring,
         too-many-arguments,
         fixme

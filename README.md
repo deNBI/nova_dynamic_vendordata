@@ -53,26 +53,88 @@ Information like the project id the current instance is started in is provided t
 
 ## Usage
 
-The nova_dynamic_vendordata service needs access to the Openstack API, therefor valid credentials must be past to 
-the service (using environment or clouds.yaml).
+### Configuration
+
+The nova_dynamic_vendordata service can be configured using a configuration file in yaml syntax.
+
+#### Openstack 
+
+The nova_dynamic_vendordata service needs access to the Openstack API, therefor valid cloud credentials
+must be past to the service (using environment or clouds.yaml).
+If `cloud` option is set, a clouds.yaml configuration is used, the environment otherwise.
+
+##### Environment
+
+The [Openstack cli manpage](https://docs.openstack.org/python-openstackclient/latest/cli/man/openstack.html#manpage)
+gives an overview about supported and used environment variables.
+
+##### Configuration file
+
+clouds.yaml is a configuration file that contains everything needed to connect to one or more clouds.
+It may contain private information and is generally considered private to a user. OpenStack API looks
+for a file called clouds.yaml in the following locations:
+
+- `.` (current directory)
+- `~/.config/openstack`
+- `/etc/openstack`
+
+The first file found wins.
+
+### Allow- or Blocklisting
+
+The nova_dynamic_vendordata service supports _Allow_- or _Blocklisting_ for domains and projects. 
+In general, it is a good idea to use _allowlist_ to give only specific domains/projects full access
+to service. 
+
+**Attention! There is no restriction when `allowlist` or `blocklist` for domains and project
+is not set.** 
+
+### Caching
+
+The nova_dynamic_vendordata service caches data to minimize Openstack API access. The Data is cached for
+300 seconds (= 5 minutes) by default and can be set using the `cache` option. Setting `cache` to `0` or 
+less disables the cache.
+
+#### Example/Template
+```yaml
+cloud: <name of cloud configuration to be used>
+
+cache: 300 
+
+domains:
+  allowlist:
+    - default_domain
+    - ...
+  blocklist:
+    - secret_domain
+    - ...
+projects:
+  allowlist:
+    - ...
+  blocklist:
+    - service
+    
+
+```
+
 
 ## Docker/Podman container
 
 A simple container based on latest alpine/python3 can be build using the Dockerfile ...
 
-```
+```shell
 docker build -t denbi/nova_dynamic_vendordata .
 ```
 
 and be can run as follows ...
 
-```
-docker run --rm --env-file env.file --network host nova_dynamic_vendordata
+```shell
+docker run --rm --env-file env.file --v config.yaml:/etc/nova_dynamic_vendordata.yaml --network host nova_dynamic_vendordata
 ```
 using host network or ...
 
-```
-docker run --rm --env-file env.file -p 9898:9898 nova_dynamic_vendordata
+```shell
+docker run --rm --env-file env.file --v config.yaml:/etc/nova_dynamic_vendordata.yaml -p 9898:9898 nova_dynamic_vendordata
 ```
 using a separate network layer.
 
