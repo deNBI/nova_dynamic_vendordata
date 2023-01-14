@@ -3,7 +3,7 @@ Module that uses the Openstack API to create project specific user data (elixir 
 """
 
 from flask import Flask, request
-from denbi.vendordata import identity, sdk, config, log
+from denbi.vendordata import identity, sdk, config, log, memcachedclient
 
 app = Flask(__name__)
 
@@ -29,6 +29,17 @@ def vendordata():
         if "blocklist" in config and project_id in config["blocklist"]:
             log.info(f"Project id {project_id} is in blocklist.")
             return None
+
+        # if caching is configured ...
+        if config["cache"]:
+            # try to get result from cache
+            result = memcachedclient.get(f'nova_dynamic_vendor_data_{project_id}')
+            if result:
+                return result
+            # if no cache hit
+            result = __userlist_by_project(project_id=project_id)
+            memcachedclient.set(f'nova_dynamic_vendor_data_{project_id}',result,config["cache"]["expire"])
+            return result
 
         return __userlist_by_project(project_id=project_id)
 
