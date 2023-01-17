@@ -21,14 +21,33 @@ def vendordata():
     if "project-id" in data:
         project_id = data["project-id"]
 
-        # allowlist is set and project id is not in allowlist
-        if "allowlist" in config and project_id not in config["allowlist"]:
-            log.info(f"Project id {project_id} is not in allowlist.")
-            return None
-        # blocklist is set and project id is in blocklist
-        if "blocklist" in config and project_id in config["blocklist"]:
-            log.info(f"Project id {project_id} is in blocklist.")
-            return None
+        if "projects" in config:
+            # allowlist is set and project id is not in allowlist
+            if "allowlist" in config["projects"] and project_id not in config["projects"]["allowlist"]:
+                log.info(f"Project id {project_id} is not in allowlist.")
+                return ""
+            # blocklist is set and project id is in blocklist
+            if "blocklist" in config["projects"] and project_id in config["projects"]["blocklist"]:
+                log.info(f"Project id {project_id} is blocklisted.")
+                return ""
+
+        if "domains" in config:
+
+            # get domain the project (id) belongs to
+            domain_id = identity.get(f"projects/{project_id}").json()["project"]["domain_id"]
+
+            log.info(f"Project {project_id} belongs to Domain {domain_id}")
+
+            if "allowlist" in config["domains"] and domain_id not in config["domains"]["allowlist"]:
+                log.info(f"Domain id {domain_id} is not in allowlist.")
+                return ""
+
+            # blocklist is set and project id is in blocklist
+            if "blocklist" in config["domains"] and domain_id in config["domains"]["blocklist"]:
+                log.info(f"Domain id {domain_id} is blocklisted.")
+                return ""
+
+
 
         # if caching is configured ...
         if "cache" in config:

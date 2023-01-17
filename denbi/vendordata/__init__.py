@@ -12,8 +12,18 @@ import sys
 import yaml
 from yaml.loader import SafeLoader
 
-log = logging.getLogger("nova_dynamic_vendordata")
+log = logging.getLogger("ndv")
 log.setLevel(logging.INFO)
+# create console handler and set level to debug
+ch = logging.StreamHandler()
+ch.setLevel(logging.INFO)
+# create formatter
+formatter = logging.Formatter('[%(asctime)s] [%(name)s] [%(levelname)s] - %(message)s')
+# add formatter to ch
+ch.setFormatter(formatter)
+
+# add ch to logger
+log.addHandler(ch)
 
 class JsonSerDe:
     """ Implements a (en-)coding safe (de-)serializer for Json objects.
@@ -61,13 +71,12 @@ def check_configuration():
         log.debug("Found option cloud.")
     for units in ("domains","projects"):
         if units in config:
-            log.debug("Found option domains.")
             for listtype in ("blocklist","allowlist"):
                 if listtype in config[units]:
-                    if isinstance(config[units][listtype],list):
-                        log.debug(f"Found option {units}->{listtype} ({','.join(config[units][listtype])})")
-                    else:
-                        log.error(f"Option {units}->{listtype} is must be of type list.")
+                    if config[units][listtype] is None:
+                        config[units][listtype] = []
+                    elif not isinstance(config[units][listtype],list):
+                        log.error(f"Option {units}->{listtype} is must be of type list (or None).")
                         return False
     return True
 
