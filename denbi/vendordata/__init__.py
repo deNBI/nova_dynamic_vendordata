@@ -51,20 +51,24 @@ def check_configuration():
     global config
     if "cache" in config:
         log.debug(f"Found option 'cache' !")
-        if "expires" in config["cache"]:
+        if config["cache"] is None:
+            config["cache"] = {}
+        if  "expires" in config["cache"]:
             log.debug("Found option cache.expires")
             if not isinstance(config["cache"]["expires"],int):
                 log.error("Option 'cache.expires' must be of type int.")
                 return False
         else:
+            log.info("Cache expire time is 300 seconds.")
             config["cache"]["expire"] = 300
-        if "host" in config["cache"]:
-            if not(isinstance(config["cache"]["expires"],str) and \
+        if  "host" in config["cache"]:
+            if not(isinstance(config["cache"]["host"],str) and \
                    re.match(r'(([a-zA-Z]|[a-zA-Z][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*'
                             r'([A-Za-z]|[A-Za-z][A-Za-z0-9\-]*[A-Za-z0-9]):\d{1,5}',
-                            config["cache"]["expires"])):
+                            config["cache"]["host"])):
                 log.error("Option 'cache.host' must be of form <host>:<port>.")
         else:
+            log.info("Use 'localhost:11211' as memcached host address.")
             config["cache"]["host"] = "localhost:11211"
 
     if "cloud" in config:
@@ -111,6 +115,6 @@ else:
 
 # initialize memcached client if cache is used
 if "cache" in config:
-    memcachedclient = MemCachedClient(config["cache"]["host"],serde=JsonSerDe)
+    memcachedclient = MemCachedClient(config["cache"]["host"],serde=JsonSerDe())
 else:
     memcachedclient = None

@@ -92,8 +92,7 @@ are not set.**
 ### Caching
 
 The nova_dynamic_vendordata service caches data to minimize Openstack API access. The Data is cached for
-300 seconds (= 5 minutes) by default and can be set using the `cache` option. Setting `cache` to `0` or 
-less disables the cache.
+300 seconds (= 5 minutes) by default and can be set using the `cache` option. 
 
 #### Example/Template
 ```yaml
