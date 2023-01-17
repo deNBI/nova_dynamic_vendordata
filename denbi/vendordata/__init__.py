@@ -13,6 +13,7 @@ import yaml
 from yaml.loader import SafeLoader
 
 log = logging.getLogger("nova_dynamic_vendordata")
+log.setLevel(logging.INFO)
 
 class JsonSerDe:
     """ Implements a (en-)coding safe (de-)serializer for Json objects.
@@ -37,40 +38,51 @@ class JsonSerDe:
 
 def check_configuration():
     """ Check validity of given configuration and set meaningful defaults."""
-    global cache
-    if config["cache"]:
+    global config
+    if "cache" in config:
         log.debug(f"Found option 'cache' !")
-        if config["cache"]["expires"]:
+        if "expires" in config["cache"]:
             log.debug("Found option cache.expires")
             if not isinstance(config["cache"]["expires"],int):
                 log.error("Option 'cache.expires' must be of type int.")
                 return False
         else:
             config["cache"]["expire"] = 300
-        if config["cache"]["host"]:
+        if "host" in config["cache"]:
             if not(isinstance(config["cache"]["expires"],str) and \
-                   re.match(r'(([a-zA-Z]|[a-zA-Z][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z]|[A-Za-z][A-Za-z0-9\-]*[A-Za-z0-9]):\d{1,5}',config["cache"]["expires"])):
+                   re.match(r'(([a-zA-Z]|[a-zA-Z][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*'
+                            r'([A-Za-z]|[A-Za-z][A-Za-z0-9\-]*[A-Za-z0-9]):\d{1,5}',
+                            config["cache"]["expires"])):
                 log.error("Option 'cache.host' must be of form <host>:<port>.")
         else:
             config["cache"]["host"] = "localhost:11211"
 
-    if config["cloud"]:
+    if "cloud" in config:
         log.debug("Found option cloud.")
     for units in ("domains","projects"):
-        if config[units]:
+        if units in config:
             log.debug("Found option domains.")
             for listtype in ("blocklist","allowlist"):
-                if config[units][listtype] and isinstance(config[units][listtype],list):
-                    log.debug(f"Found option {units}->{listtype} ({','.join(config[units][listtype])})")
-                else:
-                    log.error(f"Option {units}->{listtype} is must be of type list.")
-                    return False
+                if listtype in config[units]:
+                    if isinstance(config[units][listtype],list):
+                        log.debug(f"Found option {units}->{listtype} ({','.join(config[units][listtype])})")
+                    else:
+                        log.error(f"Option {units}->{listtype} is must be of type list.")
+                        return False
     return True
 
+# check for configuration file locations ...
+configpath = None
+if os.path.isfile("nova_dynamic_vendordata.yaml"):
+    configpath = "nova_dynamic_vendordata.yaml"
+elif os.path.isfile("/etc/nova_dynamic_vendordata.yaml"):
+    configpath = "/etc/nova_dynamic_vendordata.yaml"
+
 # check if configuration file available, load and check it
-if os.path.isfile("/etc/nova_dynamic_vendordata.yaml"):
+if configpath:
+    log.info(f"Read configuration file {configpath}")
     try:
-        with open('/etc/nova_dynamic_vendordata.yaml',encoding="UTF-8") as f:
+        with open(configpath,encoding="UTF-8") as f:
             config = yaml.load(f, Loader=SafeLoader)
             if not check_configuration():
                 sys.exit(1)
@@ -81,7 +93,7 @@ else:
     config = {}
 
 # make use of clouds.yaml if set
-if config["cloud"]:
+if "cloud" in config:
     identity = os_client_config.make_rest_client("identity", cloud=config["cloud"])
     sdk = os_client_config.make_sdk(cloud=config["cloud"])
 else:
@@ -89,5 +101,7 @@ else:
     sdk = os_client_config.make_sdk()
 
 # initialize memcached client if cache is used
-if config["cache"]:
+if "cache" in config:
     memcachedclient = MemCachedClient(config["cache"]["host"],serde=JsonSerDe)
+else:
+    memcachedclient = None

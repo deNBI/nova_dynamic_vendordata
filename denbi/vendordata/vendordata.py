@@ -31,7 +31,7 @@ def vendordata():
             return None
 
         # if caching is configured ...
-        if config["cache"]:
+        if "cache" in config:
             # try to get result from cache
             result = memcachedclient.get(f'nova_dynamic_vendor_data_{project_id}')
             if result:
