@@ -53,7 +53,7 @@ Information like the project id the current instance is started in is provided t
 ### Configuration
 
 The nova_dynamic_vendordata service can be configured using a configuration file in yaml syntax. The configuration
-is search in `$(pwd)/etc/nova_dynamic_vendordata.yaml` (preferred) and `/etc/nova_dynamic_vendordata.yaml` 
+is searched in `$(pwd)/etc/nova_dynamic_vendordata.yaml` (preferred) and `/etc/nova_dynamic_vendordata.yaml` 
 
 #### Openstack 
 
@@ -72,7 +72,7 @@ clouds.yaml is a configuration file that contains everything needed to connect t
 It may contain private information and is generally considered private to a user. OpenStack API looks
 for a file called clouds.yaml in the following locations:
 
-- `.` (current directory)
+- `$(pwd)` (current working directory)
 - `~/.config/openstack`
 - `/etc/openstack`
 
