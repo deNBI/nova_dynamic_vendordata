@@ -16,14 +16,14 @@ from yaml.loader import SafeLoader
 log = logging.getLogger("ndv")
 log.setLevel(logging.INFO)
 # create console handler and set level to debug
-ch = logging.StreamHandler()
-ch.setLevel(logging.INFO)
+consolehandler = logging.StreamHandler()
+consolehandler.setLevel(logging.INFO)
 # create formatter
 formatter = logging.Formatter('[%(asctime)s] [%(name)s] [%(levelname)s] - %(message)s')
 # add formatter to ch
-ch.setFormatter(formatter)
+consolehandler.setFormatter(formatter)
 # add ch to logger
-log.addHandler(ch)
+log.addHandler(consolehandler)
 
 # configuration
 CONFIG = {}
@@ -67,7 +67,6 @@ def load_configuration(path):
 
 def check_configuration(): # pylint: disable=too-many-branches
     """ Check validity of given configuration and set meaningful defaults."""
-    #global CONFIG
     if "cache" in CONFIG:
         if CONFIG["cache"] is None:
             CONFIG["cache"] = {}
