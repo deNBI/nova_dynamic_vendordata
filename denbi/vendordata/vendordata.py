@@ -3,7 +3,7 @@ Module that uses the Openstack API to create project specific user data (elixir 
 """
 
 from flask import Flask, request
-from denbi.vendordata import identity, sdk, config, log, memcachedclient
+from denbi.vendordata import identity, sdk, CONFIG, log, MEMCACHEDCLIENT
 
 app = Flask(__name__)
 
@@ -17,54 +17,49 @@ def vendordata():
         json document is returned.
     """
     data = request.get_json()
+    result = ""
 
     if "project-id" in data:
         project_id = data["project-id"]
 
-        if "projects" in config:
+        if "projects" in CONFIG:
             # allowlist is set and project id is not in allowlist
-            if "allowlist" in config["projects"] and project_id not in config["projects"]["allowlist"]:
+            if "allowlist" in CONFIG["projects"] and project_id not in CONFIG["projects"]["allowlist"]:
                 log.info(f"Project id {project_id} is not in allowlist.")
                 return ""
             # blocklist is set and project id is in blocklist
-            if "blocklist" in config["projects"] and project_id in config["projects"]["blocklist"]:
+            if "blocklist" in CONFIG["projects"] and project_id in CONFIG["projects"]["blocklist"]:
                 log.info(f"Project id {project_id} is blocklisted.")
                 return ""
 
-        if "domains" in config:
+        if "domains" in CONFIG:
 
             # get domain the project (id) belongs to
             domain_id = identity.get(f"projects/{project_id}").json()["project"]["domain_id"]
 
             log.info(f"Project {project_id} belongs to Domain {domain_id}")
 
-            if "allowlist" in config["domains"] and domain_id not in config["domains"]["allowlist"]:
+            if "allowlist" in CONFIG["domains"] and domain_id not in CONFIG["domains"]["allowlist"]:
                 log.info(f"Domain id {domain_id} is not in allowlist.")
                 return ""
 
             # blocklist is set and project id is in blocklist
-            if "blocklist" in config["domains"] and domain_id in config["domains"]["blocklist"]:
+            if "blocklist" in CONFIG["domains"] and domain_id in CONFIG["domains"]["blocklist"]:
                 log.info(f"Domain id {domain_id} is blocklisted.")
                 return ""
 
+        # ask cache for result if caching is configured ...
+        if "cache" in CONFIG:
+            result = MEMCACHEDCLIENT.get(f'nova_dynamic_vendor_data_{project_id}')
 
-
-        # if caching is configured ...
-        if "cache" in config:
-            # try to get result from cache
-            result = memcachedclient.get(f'nova_dynamic_vendor_data_{project_id}')
-            if result:
-                log.info("cache hit")
-                return result
-            # if no cache hit
+        if not result:
             log.info("no cache hit")
             result = __userlist_by_project(project_id=project_id)
-            memcachedclient.set(f'nova_dynamic_vendor_data_{project_id}',result,config["cache"]["expire"])
-            return result
+            # update cache if configured
+            if "cache" in CONFIG:
+                MEMCACHEDCLIENT.set(f'nova_dynamic_vendor_data_{project_id}', result, CONFIG["cache"]["expire"])
 
-        return __userlist_by_project(project_id=project_id)
-
-    return None
+    return result
 
 def __userlist_by_project(project_id):
     """

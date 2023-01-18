@@ -12,6 +12,7 @@ import sys
 import yaml
 from yaml.loader import SafeLoader
 
+# configure logger
 log = logging.getLogger("ndv")
 log.setLevel(logging.INFO)
 # create console handler and set level to debug
@@ -21,9 +22,13 @@ ch.setLevel(logging.INFO)
 formatter = logging.Formatter('[%(asctime)s] [%(name)s] [%(levelname)s] - %(message)s')
 # add formatter to ch
 ch.setFormatter(formatter)
-
 # add ch to logger
 log.addHandler(ch)
+
+# configuration
+CONFIG = {}
+# memcached client
+MEMCACHEDCLIENT = None
 
 class JsonSerDe:
     """ Implements a (en-)coding safe (de-)serializer for Json objects.
@@ -32,13 +37,13 @@ class JsonSerDe:
         See https://pymemcache.readthedocs.io/en/latest/getting_started.html#serialization
     """
 
-    def serialize(self, key, value): # pylint: disable=W0613
+    def serialize(self, key, value):  # pylint: disable=W0613
         """ Serialize value."""
         if isinstance(value, str):
             return value.encode('utf-8'), 1
         return json.dumps(value).encode('utf-8'), 2
 
-    def deserialize(self, key, value, flags): # pylint: disable=W0613
+    def deserialize(self, key, value, flags):  # pylint: disable=W0613
         """ Deserialize value."""
         if flags == 1:
             return value.decode('utf-8')
@@ -46,75 +51,69 @@ class JsonSerDe:
             return json.loads(value.decode('utf-8'))
         raise Exception("Unknown serialization format")
 
-def check_configuration():
+
+def load_configuration(path):
+    """Load configuration"""
+    global CONFIG # pylint: disable=global-statement
+    log.info(f"Read configuration file {path}")
+    try:
+        with open(path, encoding="UTF-8") as f:
+            CONFIG = yaml.load(f, Loader=SafeLoader)
+            if not check_configuration():
+                sys.exit(1)
+    except OSError as error:
+        log.error(error)
+        sys.exit(1)
+
+def check_configuration(): # pylint: disable=too-many-branches
     """ Check validity of given configuration and set meaningful defaults."""
-    global config
-    if "cache" in config:
-        log.debug(f"Found option 'cache' !")
-        if config["cache"] is None:
-            config["cache"] = {}
-        if  "expires" in config["cache"]:
-            log.debug("Found option cache.expires")
-            if not isinstance(config["cache"]["expires"],int):
+    #global CONFIG
+    if "cache" in CONFIG:
+        if CONFIG["cache"] is None:
+            CONFIG["cache"] = {}
+        if "expires" in CONFIG["cache"]:
+            if not isinstance(CONFIG["cache"]["expires"], int):
                 log.error("Option 'cache.expires' must be of type int.")
                 return False
         else:
             log.info("Cache expire time is 300 seconds.")
-            config["cache"]["expire"] = 300
-        if  "host" in config["cache"]:
-            if not(isinstance(config["cache"]["host"],str) and \
-                   re.match(r'(([a-zA-Z]|[a-zA-Z][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*'
-                            r'([A-Za-z]|[A-Za-z][A-Za-z0-9\-]*[A-Za-z0-9]):\d{1,5}',
-                            config["cache"]["host"])):
+            CONFIG["cache"]["expire"] = 300
+        if "host" in CONFIG["cache"]:
+            if not (isinstance(CONFIG["cache"]["host"], str) and \
+                    re.match(r'(([a-zA-Z]|[a-zA-Z][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*'
+                             r'([A-Za-z]|[A-Za-z][A-Za-z0-9\-]*[A-Za-z0-9]):\d{1,5}',
+                             CONFIG["cache"]["host"])):
                 log.error("Option 'cache.host' must be of form <host>:<port>.")
         else:
             log.info("Use 'localhost:11211' as memcached host address.")
-            config["cache"]["host"] = "localhost:11211"
+            CONFIG["cache"]["host"] = "localhost:11211"
 
-    if "cloud" in config:
-        log.debug("Found option cloud.")
-    for units in ("domains","projects"):
-        if units in config:
-            for listtype in ("blocklist","allowlist"):
-                if listtype in config[units]:
-                    if config[units][listtype] is None:
-                        config[units][listtype] = []
-                    elif not isinstance(config[units][listtype],list):
+    for units in ("domains", "projects"):
+        if units in CONFIG:
+            for listtype in ("blocklist", "allowlist"):
+                if listtype in CONFIG[units]:
+                    if CONFIG[units][listtype] is None:
+                        CONFIG[units][listtype] = []
+                    elif not isinstance(CONFIG[units][listtype], list):
                         log.error(f"Option {units}->{listtype} is must be of type list (or None).")
                         return False
     return True
 
-# check for configuration file locations ...
-configpath = None
-if os.path.isfile("nova_dynamic_vendordata.yaml"):
-    configpath = "nova_dynamic_vendordata.yaml"
-elif os.path.isfile("/etc/nova_dynamic_vendordata.yaml"):
-    configpath = "/etc/nova_dynamic_vendordata.yaml"
 
-# check if configuration file available, load and check it
-if configpath:
-    log.info(f"Read configuration file {configpath}")
-    try:
-        with open(configpath,encoding="UTF-8") as f:
-            config = yaml.load(f, Loader=SafeLoader)
-            if not check_configuration():
-                sys.exit(1)
-    except OSError as e:
-        log.error(e)
-        sys.exit(1)
-else:
-    config = {}
+# check for configuration file locations ...
+if os.path.isfile("nova_dynamic_vendordata.yaml"):
+    load_configuration("nova_dynamic_vendordata.yaml")
+elif os.path.isfile("/etc/nova_dynamic_vendordata.yaml"):
+    load_configuration("/etc/nova_dynamic_vendordata.yaml")
 
 # make use of clouds.yaml if set
-if "cloud" in config:
-    identity = os_client_config.make_rest_client("identity", cloud=config["cloud"])
-    sdk = os_client_config.make_sdk(cloud=config["cloud"])
+if "cloud" in CONFIG:
+    identity = os_client_config.make_rest_client("identity", cloud=CONFIG["cloud"])
+    sdk = os_client_config.make_sdk(cloud=CONFIG["cloud"])
 else:
     identity = os_client_config.make_rest_client("identity")
     sdk = os_client_config.make_sdk()
 
 # initialize memcached client if cache is used
-if "cache" in config:
-    memcachedclient = MemCachedClient(config["cache"]["host"],serde=JsonSerDe())
-else:
-    memcachedclient = None
+if "cache" in CONFIG:
+    MEMCACHEDCLIENT = MemCachedClient(CONFIG["cache"]["host"], serde=JsonSerDe())
