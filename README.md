@@ -100,7 +100,7 @@ cloud: <name of cloud configuration to be used>
 
 cache:
   host: "localhost:11211"
-  expires: 300
+  expire: 300
 
 domains:
   allowlist:

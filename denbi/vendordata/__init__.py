@@ -19,7 +19,7 @@ log.setLevel(logging.INFO)
 consolehandler = logging.StreamHandler()
 consolehandler.setLevel(logging.INFO)
 # create formatter
-formatter = logging.Formatter('[%(asctime)s] [%(name)s] [%(levelname)s] - %(message)s')
+formatter = logging.Formatter('[%(asctime)s] [%(name)s] [%(levelname)s] %(message)s')
 # add formatter to ch
 consolehandler.setFormatter(formatter)
 # add ch to logger
@@ -29,6 +29,7 @@ log.addHandler(consolehandler)
 CONFIG = {}
 # memcached client
 MEMCACHEDCLIENT = None
+
 
 class JsonSerDe:
     """ Implements a (en-)coding safe (de-)serializer for Json objects.
@@ -54,8 +55,8 @@ class JsonSerDe:
 
 def load_configuration(path):
     """Load configuration"""
-    global CONFIG # pylint: disable=global-statement
-    log.info(f"Read configuration file {path}")
+    global CONFIG  # pylint: disable=global-statement
+    log.info(f"Read configuration file '{path}'")
     try:
         with open(path, encoding="UTF-8") as f:
             CONFIG = yaml.load(f, Loader=SafeLoader)
@@ -65,26 +66,30 @@ def load_configuration(path):
         log.error(error)
         sys.exit(1)
 
-def check_configuration(): # pylint: disable=too-many-branches
+
+def check_configuration():  # pylint: disable=too-many-branches
     """ Check validity of given configuration and set meaningful defaults."""
     if "cache" in CONFIG:
         if CONFIG["cache"] is None:
             CONFIG["cache"] = {}
-        if "expires" in CONFIG["cache"]:
-            if not isinstance(CONFIG["cache"]["expires"], int):
+        if "expire" in CONFIG["cache"]:
+            if not isinstance(CONFIG["cache"]["expire"], int):
                 log.error("Option 'cache.expires' must be of type int.")
                 return False
         else:
-            log.info("Cache expire time is 300 seconds.")
+            log.info('CONFIG["cache"]["expire"] is not configured. Using default "300" (seconds).')
             CONFIG["cache"]["expire"] = 300
         if "host" in CONFIG["cache"]:
-            if not (isinstance(CONFIG["cache"]["host"], str) and \
-                    re.match(r'(([a-zA-Z]|[a-zA-Z][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*'
-                             r'([A-Za-z]|[A-Za-z][A-Za-z0-9\-]*[A-Za-z0-9]):\d{1,5}',
-                             CONFIG["cache"]["host"])):
+            if not (isinstance(CONFIG["cache"]["host"], str) and ( \
+                            re.match(r'(([a-zA-Z]|[a-zA-Z][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*'
+                                     r'([A-Za-z]|[A-Za-z][A-Za-z0-9\-]*[A-Za-z0-9]):\d{1,5}',
+                                     CONFIG["cache"]["host"]) or \
+                            re.match(r'((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}:\d{1,5}',
+                                     CONFIG["cache"]["host"]) \
+                    )):
                 log.error("Option 'cache.host' must be of form <host>:<port>.")
         else:
-            log.info("Use 'localhost:11211' as memcached host address.")
+            log.info('CONFIG["cache"]["host"] is not configured. Using default "localhost:11211".')
             CONFIG["cache"]["host"] = "localhost:11211"
 
     for units in ("domains", "projects"):
