@@ -3,11 +3,9 @@ Module that uses the Openstack API to create project specific user data (elixir 
 """
 
 from flask import Flask, request
-from denbi.vendordata import identity, sdk, config, log
+from denbi.vendordata import identity, sdk, CONFIG, log, MEMCACHEDCLIENT
 
 app = Flask(__name__)
-
-
 
 
 @app.post("/")
@@ -17,22 +15,62 @@ def vendordata():
         json document is returned.
     """
     data = request.get_json()
+    result = ""
 
     if "project-id" in data:
         project_id = data["project-id"]
 
+        # Existence of projects mustn't be checked since only
+        # valid requests from instances in existing projects
+        # are possible
+
+        if __check_accessibility(project_id):
+
+            # ask cache for result if caching is configured ...
+            if "cache" in CONFIG:
+                result = MEMCACHEDCLIENT.get(f'nova_dynamic_vendor_data_{project_id}')
+
+            if not result:
+                result = __userlist_by_project(project_id=project_id)
+                # update cache if configured
+                if "cache" in CONFIG:
+                    MEMCACHEDCLIENT.set(f'nova_dynamic_vendor_data_{project_id}', result, CONFIG["cache"]["expire"])
+
+    return result
+
+
+def __check_accessibility(project_id):
+    """
+        Check if given project_id is in project or domain block- or allow list.
+        Returns true when it is allowed to return dynamic vendor-data.
+    """
+    if "projects" in CONFIG:
         # allowlist is set and project id is not in allowlist
-        if "allowlist" in config and project_id not in config["allowlist"]:
+        if "allowlist" in CONFIG["projects"] and project_id not in CONFIG["projects"]["allowlist"]:
             log.info(f"Project id {project_id} is not in allowlist.")
-            return None
+            return False
         # blocklist is set and project id is in blocklist
-        if "blocklist" in config and project_id in config["blocklist"]:
-            log.info(f"Project id {project_id} is in blocklist.")
-            return None
+        if "blocklist" in CONFIG["projects"] and project_id in CONFIG["projects"]["blocklist"]:
+            log.info(f"Project id {project_id} is blocklisted.")
+            return False
 
-        return __userlist_by_project(project_id=project_id)
+    if "domains" in CONFIG:
 
-    return None
+        # get domain the project (id) belongs to
+        domain_id = identity.get(f"projects/{project_id}").json()["project"]["domain_id"]
+
+        log.debug(f"Project {project_id} belongs to Domain {domain_id}")
+
+        if "allowlist" in CONFIG["domains"] and domain_id not in CONFIG["domains"]["allowlist"]:
+            log.info(f"Domain id {domain_id} is not in allowlist.")
+            return False
+
+        # blocklist is set and project id is in blocklist
+        if "blocklist" in CONFIG["domains"] and domain_id in CONFIG["domains"]["blocklist"]:
+            log.info(f"Domain id {domain_id} is blocklisted.")
+            return False
+
+    return True
 
 def __userlist_by_project(project_id):
     """
@@ -68,9 +106,9 @@ def __userlist_by_project(project_id):
 
     # get a list of all role assignments belonging to given project id and extract all user id's
     _userset = set()
-    for _role_assignment in identity.get(f"{identity_prefix}role_assignments?scope.project.id={project_id}").\
-                                     json()["role_assignments"]:
-        if "user" in _role_assignment: # we are only interested in users not groups or roles
+    for _role_assignment in identity.get(f"{identity_prefix}role_assignments?scope.project.id={project_id}"). \
+            json()["role_assignments"]:
+        if "user" in _role_assignment:  # we are only interested in users not groups or roles
             _userset.add(_role_assignment["user"]["id"])
 
     result = []

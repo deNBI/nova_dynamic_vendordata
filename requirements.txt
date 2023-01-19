@@ -2,4 +2,5 @@ Flask
 gunicorn
 openstacksdk==0.99.0
 os_client_config
+pymemcache
 pyyaml

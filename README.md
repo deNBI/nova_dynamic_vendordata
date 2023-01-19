@@ -1,6 +1,3 @@
-# Attention! 
-**This repository is work in progress and shouldn't use in a production environment.**
-
 # Nova Dynamic Vendor data
 
 Openstack Nova presents configuration information to instances it starts via a mechanism called metadata. 
@@ -55,7 +52,8 @@ Information like the project id the current instance is started in is provided t
 
 ### Configuration
 
-The nova_dynamic_vendordata service can be configured using a configuration file in yaml syntax.
+The nova_dynamic_vendordata service can be configured using a configuration file in yaml syntax. The configuration
+is searched in `$(pwd)/etc/nova_dynamic_vendordata.yaml` (preferred) and `/etc/nova_dynamic_vendordata.yaml` 
 
 #### Openstack 
 
@@ -74,7 +72,7 @@ clouds.yaml is a configuration file that contains everything needed to connect t
 It may contain private information and is generally considered private to a user. OpenStack API looks
 for a file called clouds.yaml in the following locations:
 
-- `.` (current directory)
+- `$(pwd)` (current working directory)
 - `~/.config/openstack`
 - `/etc/openstack`
 
@@ -87,19 +85,22 @@ In general, it is a good idea to use _allowlist_ to give only specific domains/p
 to service. 
 
 **Attention! There is no restriction when `allowlist` or `blocklist` for domains and project
-is not set.** 
+are not set.** 
 
 ### Caching
 
-The nova_dynamic_vendordata service caches data to minimize Openstack API access. The Data is cached for
-300 seconds (= 5 minutes) by default and can be set using the `cache` option. Setting `cache` to `0` or 
-less disables the cache.
+The nova_dynamic_vendordata service caches data to minimize Openstack API access using 
+[memcached](https://memcached.org/). The Data is cached for 300 seconds (= 5 minutes) 
+by default and can be set using the `cache.expires` option. The memcached host url is
+"localhost:11211" by default and can be set using the `cache.host` option.
 
 #### Example/Template
 ```yaml
 cloud: <name of cloud configuration to be used>
 
-cache: 300 
+cache:
+  host: "localhost:11211"
+  expires: 300
 
 domains:
   allowlist:
@@ -129,12 +130,12 @@ docker build -t denbi/nova_dynamic_vendordata .
 and be can run as follows ...
 
 ```shell
-docker run --rm --env-file env.file --v config.yaml:/etc/nova_dynamic_vendordata.yaml --network host nova_dynamic_vendordata
+docker run --rm --env-file env.file -v $(pwd)/config.yaml:/etc/nova_dynamic_vendordata.yaml --network host nova_dynamic_vendordata
 ```
 using host network or ...
 
 ```shell
-docker run --rm --env-file env.file --v config.yaml:/etc/nova_dynamic_vendordata.yaml -p 9898:9898 nova_dynamic_vendordata
+docker run --rm --env-file env.file -v $(pwd)/config.yaml:/etc/nova_dynamic_vendordata.yaml -p 9898:9898 nova_dynamic_vendordata
 ```
 using a separate network layer.
 
@@ -147,3 +148,4 @@ As defined in the requirements.txt the project is based on:
 - Flask
 - os_client_config
 - gunicorn
+- pymemcach
