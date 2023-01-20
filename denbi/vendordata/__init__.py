@@ -112,8 +112,7 @@ if os.path.isfile("nova_dynamic_vendordata.yaml"):
 elif os.path.isfile("/etc/nova_dynamic_vendordata.yaml"):
     load_configuration("/etc/nova_dynamic_vendordata.yaml")
 else:
-    log.error(f"nova_dynamic_vendordata.yaml not found in $(pwd) or /etc/")
-    sys.exit(1)
+    log.warn(f"nova_dynamic_vendordata.yaml not found in $(pwd) or /etc/. Using defaults.")
 
 # make use of clouds.yaml if set
 if "cloud" in CONFIG:
