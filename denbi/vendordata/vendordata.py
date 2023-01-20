@@ -1,5 +1,5 @@
 """
-Module that uses the Openstack API to create project specific user data (elixir id, elixir_name, ssh keys, ...).
+Module that uses the OpenStack API to create project specific user data (elixir id, elixir_name, ssh keys, ...).
 """
 
 from flask import Flask, request
@@ -10,8 +10,8 @@ app = Flask(__name__)
 
 @app.post("/")
 def vendordata():
-    """ Return a list of users (with metadata) for given project id.
-        If project_id is block listed or not in allow listed an empty
+    """ Return a list of users (with metadata) for given project ID.
+        If project_id is blocklisted or not allowlisted an empty
         json document is returned.
     """
     data = request.get_json()
@@ -104,7 +104,7 @@ def __userlist_by_project(project_id):
 
         _userlist[_user["id"]] = _tmp
 
-    # get a list of all role assignments belonging to given project id and extract all user id's
+    # get a list of all role assignments belonging to given project id and extract all user IDs
     _userset = set()
     for _role_assignment in identity.get(f"{identity_prefix}role_assignments?scope.project.id={project_id}"). \
             json()["role_assignments"]:

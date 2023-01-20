@@ -1,21 +1,21 @@
 # Nova Dynamic Vendor data
 
-Openstack Nova presents configuration information to instances it starts via a mechanism called metadata. 
+OpenStack Nova presents configuration information to instances it starts via a mechanism called metadata. 
 This metadata is made available via metadata service. Services like cloud-init make use of this metadata
-to initialize and configure a started instance.
+to initialize and configure an instance on launch.
 
-Beside  metadata information in AWS compatible format, Openstack additionally supports metadata in its
-own style. There are three different kind of metadata which can be made available to the instance.
+Beside  metadata information in AWS compatible format, OpenStack additionally supports metadata in its
+own style. There are three different kinds of metadata which can be made available to the instance.
 
-| Typ | Description                                                                                   |
-|-----|-----------------------------------------------------------------------------------------------|
-| Nova (Compute) data | Structured data containing information about network, hostname, public-key, ...               |
-| User data | The user has the ability to pass unstructured data like shell scripts, ...  to the instance.  |
-| Vendor data | Optional the cloud provider can make vendor specific information (static or dynamic) availabe |
+| Typ                 | Description                                                                                      |
+|---------------------|--------------------------------------------------------------------------------------------------|
+| Nova (Compute) data | Structured data containing information about network, hostname, public-key, etc.                 |
+| User data           | The user has the ability to pass unstructured data like shell scripts, ...  to the instance.     |
+| Vendor data         | (Optional) The cloud provider can make vendor specific information (static or dynamic) available |
 
 _Vendor data can be static or dynamic or a mixture of both._
 
-Query the vendor_data2.json returns all available vendor data static and dynamic in a single json file.
+Querying the `vendor_data2.json` returns all available vendor data (static and dynamic) in a single json file.
 
 ```
 > curl http://169.254.169.254/openstack/latest/vendor_data2.json | jq 
@@ -36,39 +36,39 @@ Query the vendor_data2.json returns all available vendor data static and dynamic
  }
 ```
 
-## Configure Dynamic Vendor data
+## Configuration of dynamic vendor data
 
-Dynamic Vendor data can be enabled and configured in the Nova API configuration. It is possible to configure more
-than one endpoint. Different endpoints are distinguished by a unique prefix. The configuration example below configure
-two endpoints which delivers data when dynamic vendor is requested. 
+Dynamic vendor data can be enabled and configured in the Nova API configuration. It is possible to configure more
+than one endpoint. Different endpoints are distinguished by a unique prefix. The configuration example below configures
+the two endpoints `denbi` and `nfdi`.
 ```
 [api]
 vendordata_providers=DynamicJSON
 vendordata_dynamic_targets=denbi@http://localhost:9898,nfdi@http://localhost
 ```
-Information like the project id the current instance is started in is provided to each dynamic endpoint.
+Information like the project ID of the current instance is provided to each dynamic endpoint.
 
 ## Usage
 
 ### Configuration
 
-The nova_dynamic_vendordata service can be configured using a configuration file in yaml syntax. The configuration
-is searched in `$(pwd)/etc/nova_dynamic_vendordata.yaml` (preferred) and `/etc/nova_dynamic_vendordata.yaml` 
+The `nova_dynamic_vendordata` service can be configured using a configuration file in yaml syntax. The configuration
+is searched in `$(pwd)/nova_dynamic_vendordata.yaml` (preferred) and `/etc/nova_dynamic_vendordata.yaml` 
 
-#### Openstack 
+#### OpenStack 
 
-The nova_dynamic_vendordata service needs access to the Openstack API, therefor valid cloud credentials
-must be past to the service (using environment or clouds.yaml).
-If `cloud` option is set, a clouds.yaml configuration is used, the environment otherwise.
+The `nova_dynamic_vendordata` service needs access to the OpenStack API, therefore valid cloud credentials
+must be passed to the service (using environment or `clouds.yaml`).
+If the `cloud` option is set, the `clouds.yaml` configuration is used instead of environment variables.
 
 ##### Environment
 
-The [Openstack cli manpage](https://docs.openstack.org/python-openstackclient/latest/cli/man/openstack.html#manpage)
+The [OpenStack CLI manpage](https://docs.openstack.org/python-openstackclient/latest/cli/man/openstack.html#manpage)
 gives an overview about supported and used environment variables.
 
 ##### Configuration file
 
-clouds.yaml is a configuration file that contains everything needed to connect to one or more clouds.
+`clouds.yaml` is a configuration file that contains everything needed to connect to one or more clouds.
 It may contain private information and is generally considered private to a user. OpenStack API looks
 for a file called clouds.yaml in the following locations:
 
@@ -76,20 +76,19 @@ for a file called clouds.yaml in the following locations:
 - `~/.config/openstack`
 - `/etc/openstack`
 
-The first file found wins.
+The first file found is used.
 
 ### Allow- or Blocklisting
 
-The nova_dynamic_vendordata service supports _Allow_- or _Blocklisting_ for domains and projects. 
+The `nova_dynamic_vendordata` service supports _allow- or _blocklisting_ for domains and projects. 
 In general, it is a good idea to use _allowlist_ to give only specific domains/projects full access
-to service. 
+to the service by providing their UUIDs.
 
-**Attention! There is no restriction when `allowlist` or `blocklist` for domains and project
-are not set.** 
+**Attention! The API is unprotected if neither `allowlist` nor `blocklist` are set.** 
 
 ### Caching
 
-The nova_dynamic_vendordata service caches data to minimize Openstack API access using 
+The `nova_dynamic_vendordata` service caches data to minimize OpenStack API access using 
 [memcached](https://memcached.org/). The Data is cached for 300 seconds (= 5 minutes) 
 by default and can be set using the `cache.expires` option. The memcached host url is
 "localhost:11211" by default and can be set using the `cache.host` option.
@@ -104,24 +103,22 @@ cache:
 
 domains:
   allowlist:
-    - default_domain
+    - fcae49b0-acf8-4a67-83e0-9960bc5fb598
     - ...
   blocklist:
-    - secret_domain
+    - c111d409-2350-4a32-963b-e819cf6d61ec
     - ...
 projects:
   allowlist:
     - ...
   blocklist:
-    - service
-    
-
+    - 6550efc9-b930-4956-b9d7-8d8ab42eab3f
 ```
 
 
 ## Docker/Podman container
 
-A simple container based on latest alpine/python3 can be build using the Dockerfile ...
+A simple container based on the latest `alpine/python3` can be built using the Dockerfile ...
 
 ```shell
 docker build -t denbi/nova_dynamic_vendordata .
@@ -140,12 +137,5 @@ docker run --rm --env-file env.file -v $(pwd)/config.yaml:/etc/nova_dynamic_vend
 using a separate network layer.
 
 ## Requirements and known issues.
-nova_dynamic_vendordata is tested on Ubuntu 20.04 and newer (Python 3.8 or newer). Older python version might work, but
-Ubuntu 18.04 with default python 3 version (3.6) is known not to be working.
-
-As defined in the requirements.txt the project is based on:
-
-- Flask
-- os_client_config
-- gunicorn
-- pymemcach
+`nova_dynamic_vendordata` has been tested on Ubuntu 20.04 and newer (Python 3.8 or newer). Older python versions might work, but
+Ubuntu 18.04 with default python 3 version (3.6) is known NOT to be working.
