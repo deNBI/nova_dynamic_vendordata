@@ -103,16 +103,16 @@ cache:
 
 domains:
   allowlist:
-    - fcae49b0-acf8-4a67-83e0-9960bc5fb598
+    - a82d19f5f457eed321d5cfd7805a246a
     - ...
   blocklist:
-    - c111d409-2350-4a32-963b-e819cf6d61ec
+    - 587c3572e782e8d7fb0f84e901bf9304
     - ...
 projects:
   allowlist:
     - ...
   blocklist:
-    - 6550efc9-b930-4956-b9d7-8d8ab42eab3f
+    - 4dab5f6ee619185275777efb79fd019f
 ```
 
 
