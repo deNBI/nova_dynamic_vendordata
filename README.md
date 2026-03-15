@@ -118,7 +118,7 @@ projects:
 
 ## Docker/Podman container
 
-A simple container based on the latest `alpine/python3` can be built using the Dockerfile ...
+A simple container based on the latest `python:3.12-slim-bookworm` image can be built using the Dockerfile ...
 
 ```shell
 docker build -t denbi/nova_dynamic_vendordata .
@@ -137,5 +137,5 @@ docker run --rm --env-file env.file -v $(pwd)/config.yaml:/etc/nova_dynamic_vend
 using a separate network layer.
 
 ## Requirements and known issues.
-`nova_dynamic_vendordata` has been tested on Ubuntu 20.04 and newer (Python 3.8 or newer). Older python versions might work, but
+`nova_dynamic_vendordata` has been tested on Ubuntu 22.04 and newer (Python 3.10 or newer). Older python versions might work, but
 Ubuntu 18.04 with default python 3 version (3.6) is known NOT to be working.
