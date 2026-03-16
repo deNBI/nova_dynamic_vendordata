@@ -1,11 +1,11 @@
-FROM python:3-alpine
+FROM python:3.12-slim-bookworm
 
 RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
 
 COPY requirements.txt /usr/src/app/
 
-RUN apk add --no-cache build-base linux-headers && pip3 install --no-cache-dir -r requirements.txt && apk del build-base linux-headers
+RUN apt update && apt install build-essential -y && pip3 install --no-cache-dir -r requirements.txt && apt remove build-essential -y && apt autoremove -y
 
 COPY wsgi.py  /usr/src/app
 COPY denbi /usr/src/app/denbi
