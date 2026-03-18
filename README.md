@@ -118,7 +118,7 @@ projects:
 
 ## Docker/Podman container
 
-A simple container based on the latest `python:3.12-slim-bookworm` image can be built using the Dockerfile ...
+A simple container based on the latest `python:3.12-slim` image can be built using the Dockerfile ...
 
 ```shell
 docker build -t denbi/nova_dynamic_vendordata .
