@@ -1,4 +1,4 @@
-FROM python:3.12-slim-bookworm
+FROM python:3.12-slim
 
 RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
